@@ -599,6 +599,7 @@ class TerraformLexer(RegexLexer):
              Keyword.Reserved, 'function'),
             (words(embedded_keywords, prefix=r'\b', suffix=r'\b'),
              Keyword.Declaration),
+            include('variable_string'),
             (r'\$\{', String.Interpol, 'var_builtin'),
         ],
         'function': [
@@ -617,6 +618,9 @@ class TerraformLexer(RegexLexer):
         ],
         'string': [
             (r'(".*")', bygroups(String.Double)),
+        ],
+        'variable_string': [
+            (r'([A-Za-z_\[\]\.\*])', bygroups(Name.Variable)),
         ],
         'punctuation': [
             (r'[\[\](),.]', Punctuation),
