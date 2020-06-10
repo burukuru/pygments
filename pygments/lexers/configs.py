@@ -601,7 +601,6 @@ class TerraformLexer(RegexLexer):
             (words(embedded_keywords, prefix=r'\b', suffix=r'\b'),
              Keyword.Declaration),
             include('var_builtin'),
-            # (r'\$\{', String.Interpol, 'var_builtin'),
         ],
         'function': [
             (r'(\s+)(".*")(\s+)', bygroups(Text, String, Text)),
@@ -610,28 +609,20 @@ class TerraformLexer(RegexLexer):
         ],
         'var_builtin': [
             (r'\$\{', String.Interpol, '#push'),
-            include('variable_builtin_naked'),
-            include('variable'),
-            (r'\}', String.Interpol, '#pop'),
-        ],
-        'quoted_string': [
-            (r'(".*")', bygroups(String.Double)),
-        ],
-        'string': [
-            (r'([A-Za-z0-9_\*]+)', bygroups(String.Double)),
-            include('punctuation'),
-        ],
-        'variable_builtin_naked': [
             (words(('concat', 'file', 'join', 'lookup', 'element'),
                    prefix=r'\b', suffix=r'\b'), Name.Builtin),
-            # include('string'),
-            include('punctuation'),
-            (r'\s+', Text),
-        ],
-        'variable': [
             (words(('var', 'resource', 'module', 'data', 'each'), prefix=r'\b', suffix=r'\.'),
              Name.Variable),
             include('string'),
+            include('punctuation'),
+            (r'\s+', Text),
+            (r'\}', String.Interpol, '#pop'),
+        ],
+        'string': [
+            (r'([A-Za-z0-9_\*]+)', bygroups(String.Double)),
+        ],
+        'quoted_string': [
+            (r'(".*")', bygroups(String.Double)),
         ],
         'punctuation': [
             (r'[\[\](),.]', Punctuation),
