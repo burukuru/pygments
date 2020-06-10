@@ -576,13 +576,15 @@ class TerraformLexer(RegexLexer):
     filenames = ['*.tf']
     mimetypes = ['application/x-tf', 'application/x-terraform']
 
+    # Top level blocks https://www.terraform.io/docs/configuration/syntax-json.html
+    top_level_blocks = ('resource', 'data', 'variable', 'output', 'local', 'module', 'provider', 'terraform')
     embedded_keywords = ('ingress', 'egress', 'listener', 'default',
                          'connection', 'alias', 'terraform', 'tags', 'vars',
                          'config', 'lifecycle', 'timeouts')
 
     tokens = {
         'root': [
-            include('string'),
+            include('quoted_string'),
             include('punctuation'),
             include('curly'),
             include('basic'),
@@ -594,13 +596,12 @@ class TerraformLexer(RegexLexer):
             (r'\s*/\*', Comment.Multiline, 'comment'),
             (r'\s*#.*\n', Comment.Single),
             (r'(.*?)(\s*)(=)', bygroups(Name.Attribute, Text, Operator)),
-            (words(('variable', 'resource', 'provider', 'provisioner', 'module',
-                    'backend', 'data', 'output'), prefix=r'\b', suffix=r'\b'),
+            (words(top_level_blocks, prefix=r'^\s*', suffix=r'\b'),
              Keyword.Reserved, 'function'),
             (words(embedded_keywords, prefix=r'\b', suffix=r'\b'),
              Keyword.Declaration),
-            include('variable_string'),
-            (r'\$\{', String.Interpol, 'var_builtin'),
+            include('var_builtin'),
+            # (r'\$\{', String.Interpol, 'var_builtin'),
         ],
         'function': [
             (r'(\s+)(".*")(\s+)', bygroups(Text, String, Text)),
@@ -609,18 +610,28 @@ class TerraformLexer(RegexLexer):
         ],
         'var_builtin': [
             (r'\$\{', String.Interpol, '#push'),
-            (words(('concat', 'file', 'join', 'lookup', 'element'),
-                   prefix=r'\b', suffix=r'\b'), Name.Builtin),
-            include('string'),
-            include('punctuation'),
-            (r'\s+', Text),
+            include('variable_builtin_naked'),
+            include('variable'),
             (r'\}', String.Interpol, '#pop'),
         ],
-        'string': [
+        'quoted_string': [
             (r'(".*")', bygroups(String.Double)),
         ],
-        'variable_string': [
-            (r'([A-Za-z_\[\]\.\*])', bygroups(Name.Variable)),
+        'string': [
+            (r'([A-Za-z0-9_\*]+)', bygroups(String.Double)),
+            include('punctuation'),
+        ],
+        'variable_builtin_naked': [
+            (words(('concat', 'file', 'join', 'lookup', 'element'),
+                   prefix=r'\b', suffix=r'\b'), Name.Builtin),
+            # include('string'),
+            include('punctuation'),
+            (r'\s+', Text),
+        ],
+        'variable': [
+            (words(('var', 'resource', 'module', 'data', 'each'), prefix=r'\b', suffix=r'\.'),
+             Name.Variable),
+            include('string'),
         ],
         'punctuation': [
             (r'[\[\](),.]', Punctuation),
